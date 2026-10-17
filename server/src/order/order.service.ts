@@ -1,9 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
+import { EventEmitter } from 'events';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../common/redis.service';
 import { BizException } from '../common/biz-exception';
 import { HttpStatus } from '@nestjs/common';
-import { Prisma, ProductSpecGroup, SpecGroup, SpecOption } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { canTransition, StateTransitionError, OrderStatus } from './state-machine';
+
+export const EVENT_BUS = 'EVENT_BUS';
 
 const PREDEDUCT_KEY_PREFIX = 'stock:pre:';
 const PREDEDUCT_TTL_SECONDS = 15 * 60; // 15 分钟超时
@@ -69,6 +73,7 @@ export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
+    @Optional() @Inject(EVENT_BUS) private readonly eventBus?: EventEmitter,
   ) {}
 
   /**
@@ -294,5 +299,136 @@ export class OrderService {
     }
     await this.redis.client.del(`order:created:${orderId}`);
     this.logger.log(`预扣释放: orderId=${orderId}`);
+  }
+
+  // ===== 状态机 =====
+
+  private async transition(
+    orderId: string,
+    targetStatus: OrderStatus,
+    ctx: { update?: any; emit?: boolean } = {},
+  ) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new BizException(1004, '订单不存在', HttpStatus.OK);
+
+    const from = order.status as OrderStatus;
+    if (!canTransition(from, targetStatus)) {
+      throw new StateTransitionError(from, targetStatus);
+    }
+
+    const data: any = { status: targetStatus, ...(ctx.update || {}) };
+    const updated = await this.prisma.order.update({ where: { id: orderId }, data });
+
+    this.logger.log(`订单状态流转: ${orderId} ${from} → ${targetStatus}`);
+
+    if (ctx.emit !== false) {
+      this.eventBus?.emit('order:status', {
+        orderId,
+        status: targetStatus,
+        merchantId: order.merchantId,
+        openid: order.openid,
+        updatedAt: new Date(),
+      });
+    }
+
+    return updated;
+  }
+
+  /** 商家接单: pending_accept → making */
+  async accept(orderId: string) {
+    return this.transition(orderId, 'making', { update: { acceptedAt: new Date() } });
+  }
+
+  /** 商家完成: making → ready（可取餐） */
+  async complete(orderId: string) {
+    return this.transition(orderId, 'ready');
+  }
+
+  /** 确认取餐: ready → completed */
+  async finish(orderId: string) {
+    return this.transition(orderId, 'completed', { update: { completedAt: new Date() } });
+  }
+
+  /**
+   * 取消订单
+   * - pending_payment → cancelled: 释放预扣
+   * - pending_accept → cancelled: 已支付则自动退款 + 释放库存
+   * - making → cancelled: 已支付则自动退款
+   */
+  async cancel(orderId: string, reason: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
+    if (!order) throw new BizException(1004, '订单不存在', HttpStatus.OK);
+
+    const from = order.status as OrderStatus;
+    if (!canTransition(from, 'cancelled')) {
+      throw new StateTransitionError(from, 'cancelled');
+    }
+
+    // 状态流转
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'cancelled', cancelledAt: new Date(), cancelReason: reason },
+    });
+
+    this.logger.log(`订单取消: ${orderId}, reason=${reason}, from=${from}`);
+
+    // 副作用: 释放预扣库存（pending_payment 阶段）
+    if (from === 'pending_payment') {
+      await this.releasePreDeduction(
+        orderId,
+        order.items.map((it: any) => ({ productId: it.productId, quantity: it.quantity })),
+      );
+    }
+
+    // 副作用: 已支付自动退款（Issue #4 PaymentService 已写 TODO，这里标待接）
+    if (order.payStatus === 'paid') {
+      this.logger.warn(`已支付订单 ${orderId} 取消，待接入 PaymentService 退款 API`);
+      // TODO: 调 PaymentService.refund(order.outTradeNo, order.totalAmount)
+    }
+
+    return order;
+  }
+
+  /** 查询订单详情 */
+  async getById(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) throw new BizException(1004, '订单不存在', HttpStatus.OK);
+    return order;
+  }
+
+  /** 顾客订单列表 */
+  async listByOpenid(openid: string, page: number, pageSize: number) {
+    const where = { openid };
+    const [list, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: { items: true },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return { list, total, page, pageSize };
+  }
+
+  /** 商家订单列表 */
+  async listByMerchant(merchantId: string, status?: string, page = 1, pageSize = 20) {
+    const where: any = { merchantId };
+    if (status) where.status = status;
+    const [list, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: { items: true },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return { list, total, page, pageSize };
   }
 }
