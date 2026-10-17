@@ -1,0 +1,10 @@
+{
+  "name": "miniapp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "顾客端微信小程序（Taro + React + TypeScript）",
+  "scripts": {
+    "dev:weapp": "echo 'TODO: Taro dev:weapp 脚手架待初始化'",
+    "build:weapp": "echo 'TODO: Taro build:weapp 脚手架待初始化'"
+  }
+}

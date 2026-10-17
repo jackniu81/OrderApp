@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+.env
+*.local
+.git
+.gitignore
+specs
+temp.md
+.qoder-pr-body.md

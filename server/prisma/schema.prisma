@@ -1,0 +1,224 @@
+// Prisma schema for OrderApp - 自提点餐模板
+// 关联 specs/04-data.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== 门店 =====
+model Merchant {
+  id             String    @id @db.VarChar(32)
+  name           String    @db.VarChar(100)
+  logo           String?   @db.VarChar(255)
+  address        String?   @db.VarChar(255)
+  phone          String?   @db.VarChar(20)
+  businessHours  String?   @db.VarChar(50)
+  isOpen         Boolean   @default(true)
+  payOnSiteEnabled Boolean @default(false)
+  notice         String?   @db.VarChar(500)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  categories       Category[]
+  products         Product[]
+  specGroups       SpecGroup[]
+  orders           Order[]
+  printers         Printer[]
+  adminUsers       AdminUser[]
+
+  @@map("merchant")
+}
+
+// ===== 分类 =====
+model Category {
+  id         String    @id @db.VarChar(32)
+  merchantId String    @db.VarChar(32)
+  merchant   Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  name       String    @db.VarChar(50)
+  sort       Int       @default(0)
+  visible    Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  products Product[]
+
+  @@index([merchantId, sort])
+  @@map("category")
+}
+
+// ===== 商品 =====
+model Product {
+  id         String    @id @db.VarChar(32)
+  merchantId String    @db.VarChar(32)
+  merchant   Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  categoryId String    @db.VarChar(32)
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name       String    @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  image      String?   @db.VarChar(255)
+  price      Int
+  stock      Int       @default(0)
+  onSale     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  specGroups ProductSpecGroup[]
+
+  @@index([merchantId, categoryId])
+  @@index([onSale])
+  @@map("product")
+}
+
+// ===== 商品-规格组关联 =====
+model ProductSpecGroup {
+  id          String     @id @db.VarChar(32)
+  productId   String     @db.VarChar(32)
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  specGroupId String     @db.VarChar(32)
+  specGroup   SpecGroup  @relation(fields: [specGroupId], references: [id], onDelete: Cascade)
+  sort        Int        @default(0)
+
+  @@unique([productId, specGroupId])
+  @@map("product_spec_group")
+}
+
+// ===== 规格组 =====
+model SpecGroup {
+  id          String        @id @db.VarChar(32)
+  merchantId  String        @db.VarChar(32)
+  merchant    Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  name        String        @db.VarChar(50)
+  type        String        @db.VarChar(10) // single / multi
+  required    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  options      SpecOption[]
+  products     ProductSpecGroup[]
+
+  @@index([merchantId])
+  @@map("spec_group")
+}
+
+// ===== 规格选项 =====
+model SpecOption {
+  id         String   @id @db.VarChar(32)
+  groupId    String   @db.VarChar(32)
+  group      SpecGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name       String   @db.VarChar(50)
+  priceDelta Int      @default(0)
+  sort       Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([groupId])
+  @@map("spec_option")
+}
+
+// ===== 订单 =====
+model Order {
+  id            String   @id @db.VarChar(32)
+  outTradeNo    String   @unique @db.VarChar(64)
+  merchantId    String   @db.VarChar(32)
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  openid        String   @db.VarChar(64)
+  status        String   @db.VarChar(20)
+  totalAmount   Int
+  payMethod     String   @db.VarChar(10) // wechat / on_site
+  payStatus     String   @default("unpaid") @db.VarChar(20)
+  remark        String?  @db.VarChar(500)
+  createdAt     DateTime
+  paidAt        DateTime?
+  acceptedAt    DateTime?
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  cancelReason  String?  @db.VarChar(200)
+
+  items    OrderItem[]
+  payment  Payment?
+
+  @@index([merchantId, status, createdAt])
+  @@index([openid, createdAt])
+  @@index([status])
+  @@map("order")
+}
+
+// ===== 订单明细 =====
+model OrderItem {
+  id            String  @id @db.VarChar(32)
+  orderId       String  @db.VarChar(32)
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String  @db.VarChar(32)
+  productName   String  @db.VarChar(100)
+  productImage  String? @db.VarChar(255)
+  price         Int
+  quantity      Int
+  specSnapshot  String? @db.VarChar(500)
+  remark        String? @db.VarChar(200)
+  subtotal      Int
+  createdAt     DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_item")
+}
+
+// ===== 支付流水 =====
+model Payment {
+  id            String  @id @db.VarChar(32)
+  outTradeNo    String  @unique @db.VarChar(64)
+  order         Order   @relation(fields: [outTradeNo], references: [outTradeNo])
+  transactionId String? @db.VarChar(64)
+  amount        Int
+  status        String  @default("pending") @db.VarChar(20)
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([transactionId])
+  @@map("payment")
+}
+
+// ===== 打印机 =====
+model Printer {
+  id         String   @id @db.VarChar(32)
+  merchantId String   @db.VarChar(32)
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  name       String   @db.VarChar(50)
+  type       String   @db.VarChar(20)
+  sn         String   @db.VarChar(100)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([merchantId])
+  @@map("printer")
+}
+
+// ===== 顾客（匿名）=====
+model User {
+  openid    String   @id @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  // 注: User 与 Order 通过 openid 字符串关联，无数据库外键
+  // 订单查询走 Order.openid 索引
+
+  @@map("user")
+}
+
+// ===== 商家后台管理员 =====
+model AdminUser {
+  id         String   @id @db.VarChar(32)
+  merchantId String   @db.VarChar(32)
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  username   String   @unique @db.VarChar(50)
+  password   String   @db.VarChar(255) // bcrypt hash
+  role       String   @default("owner") @db.VarChar(20) // owner / staff
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("admin_user")
+}
