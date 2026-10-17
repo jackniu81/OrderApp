@@ -1,0 +1,10 @@
+{
+  "name": "admin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "商家后台管理（React + Vite + AntD）",
+  "scripts": {
+    "dev": "echo 'TODO: Vite dev 脚手架待初始化'",
+    "build": "echo 'TODO: Vite build 脚手架待初始化'"
+  }
+}

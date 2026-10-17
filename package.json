@@ -1,0 +1,21 @@
+{
+  "name": "order-template",
+  "version": "0.1.0",
+  "private": true,
+  "description": "单店自提点餐可复用模板（微信小程序 + 后台管理 + Node 后端）",
+  "workspaces": [
+    "apps/*",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w server",
+    "build": "npm run build -w server",
+    "start": "npm run start -w server",
+    "seed": "npm run seed -w server",
+    "migrate": "npm run migrate -w server",
+    "ci": "npm run ci -w server"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
