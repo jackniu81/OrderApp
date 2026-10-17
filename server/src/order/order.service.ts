@@ -365,7 +365,7 @@ export class OrderService {
     }
 
     // 状态流转
-    await this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: 'cancelled', cancelledAt: new Date(), cancelReason: reason },
     });
@@ -386,7 +386,7 @@ export class OrderService {
       // TODO: 调 PaymentService.refund(order.outTradeNo, order.totalAmount)
     }
 
-    return order;
+    return updated;
   }
 
   /** 查询订单详情 */
