@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../common/redis.service';
 import { BizException } from '../common/biz-exception';
 import { HttpStatus } from '@nestjs/common';
 import { Payment, Order } from '@prisma/client';
+import { PrintService } from '../print/print.service';
 
 /**
  * 微信 V3 支付参数（传给小程序 wx.requestPayment）
@@ -32,6 +33,7 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
+    @Optional() private readonly printService?: PrintService,
   ) {
     this.initSdk();
   }
@@ -217,7 +219,13 @@ export class PaymentService {
     this.logger.log(`支付回调处理成功: orderId=${order.id}, outTradeNo=${outTradeNo}, transactionId=${transactionId}`);
 
     // TODO: 触发 WebSocket 推送顾客 + 商家（Issue #5）
-    // TODO: 触发小票打印（Issue #6）
+
+    // 支付成功自动打印小票（Issue #6，尽力而为，失败不影响回调结果）
+    if (this.printService) {
+      this.printService.printOrder(order.id).catch((err: any) => {
+        this.logger.warn(`自动打印小票失败: orderId=${order.id}, ${err?.message ?? err}`);
+      });
+    }
 
     return { code: 'SUCCESS', message: 'OK' };
   }
