@@ -13,9 +13,15 @@
     "start": "npm run start -w server",
     "seed": "npm run seed -w server",
     "migrate": "npm run migrate -w server",
-    "ci": "npm run ci -w server"
+    "ci": "npm run ci -w server",
+    "miniapp:build": "npm run build:weapp -w miniapp",
+    "miniapp:typecheck": "npm run typecheck -w miniapp",
+    "miniapp:test": "npm run test -w miniapp"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@tarojs/taro-loader": "^4.3.0"
   }
 }
