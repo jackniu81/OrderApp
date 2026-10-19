@@ -14,6 +14,8 @@
     "seed": "npm run seed -w server",
     "migrate": "npm run migrate -w server",
     "ci": "npm run ci -w server",
+    "miniapp:dev:weapp": "npm run dev:weapp -w miniapp",
+    "miniapp:dev:h5": "npm run dev:h5 -w miniapp",
     "miniapp:build": "npm run build:weapp -w miniapp",
     "miniapp:typecheck": "npm run typecheck -w miniapp",
     "miniapp:test": "npm run test -w miniapp",
