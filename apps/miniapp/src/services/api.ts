@@ -6,6 +6,8 @@ import type {
   ProductDetail,
   CreateOrderResult,
   CreateOrderItem,
+  OrderInfo,
+  OrderListResult,
   PayMethod,
   PaymentStatus,
 } from '../types';
@@ -32,6 +34,11 @@ export const orderApi = {
     remark?: string;
     payMethod: PayMethod;
   }) => api.post<CreateOrderResult>('/orders', payload),
+  list: (openid: string, page = 1, pageSize = 20) =>
+    api.get<OrderListResult>('/orders', { openid, page, pageSize }),
+  detail: (id: string) => api.get<OrderInfo>(`/orders/${id}`),
+  /** 顾客确认取餐：ready → completed */
+  finish: (id: string) => api.post<OrderInfo>(`/orders/${id}/finish`),
 };
 
 export const paymentApi = {

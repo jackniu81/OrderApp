@@ -120,6 +120,12 @@ export default function MenuPage() {
             <Text>{c.name}</Text>
           </View>
         ))}
+        <View
+          className="menu-side-orders"
+          onClick={() => Taro.navigateTo({ url: '/pages/orders/index' })}
+        >
+          <Text>我的订单</Text>
+        </View>
       </ScrollView>
 
       <ScrollView className="menu-main" scrollY>
