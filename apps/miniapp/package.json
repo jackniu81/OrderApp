@@ -3,8 +3,46 @@
   "version": "0.1.0",
   "private": true,
   "description": "顾客端微信小程序（Taro + React + TypeScript）",
+  "template": "Taro 4 + React 18 + TypeScript（手写精简脚手架）",
   "scripts": {
-    "dev:weapp": "echo 'TODO: Taro dev:weapp 脚手架待初始化'",
-    "build:weapp": "echo 'TODO: Taro build:weapp 脚手架待初始化'"
+    "dev:weapp": "taro build --type weapp --watch",
+    "build:weapp": "taro build --type weapp",
+    "dev:h5": "taro build --type h5 --watch",
+    "build:h5": "taro build --type h5",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.24.0",
+    "@tarojs/components": "4.3.0",
+    "@tarojs/helper": "4.3.0",
+    "@tarojs/plugin-framework-react": "4.3.0",
+    "@tarojs/plugin-platform-h5": "4.3.0",
+    "@tarojs/react": "4.3.0",
+    "@tarojs/runtime": "4.3.0",
+    "@tarojs/shared": "4.3.0",
+    "@tarojs/taro": "4.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-react": "^7.24.1",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15",
+    "@tarojs/cli": "4.3.0",
+    "@tarojs/plugin-html": "4.3.0",
+    "@tarojs/plugin-platform-weapp": "4.3.0",
+    "@tarojs/taro-loader": "4.3.0",
+    "@tarojs/webpack5-runner": "^4.3.0",
+    "@types/react": "^18.3.0",
+    "@types/webpack-env": "^1.18.5",
+    "babel-preset-taro": "4.3.0",
+    "postcss": "^8.4.38",
+    "react-refresh": "^0.14.0",
+    "sass": "^1.77.0",
+    "typescript": "^5.4.5",
+    "vite": "^4.5.0",
+    "vitest": "^2.0.0",
+    "webpack": "^5.91.0"
   }
 }

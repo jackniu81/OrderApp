@@ -1,0 +1,135 @@
+.confirm-page {
+  min-height: 100vh;
+  padding: 24px 24px calc(140px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.confirm-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.confirm-section-title {
+  font-size: 28px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.confirm-row {
+  display: flex;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #f2f3f5;
+}
+
+.confirm-row:last-child {
+  border-bottom: none;
+}
+
+.confirm-row-img {
+  width: 88px;
+  height: 88px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background: #f2f3f5;
+}
+
+.confirm-row-img-ph {
+  background: linear-gradient(135deg, #f2f3f5, #e8eaed);
+}
+
+.confirm-row-info {
+  flex: 1;
+  margin-left: 16px;
+}
+
+.confirm-row-name {
+  font-size: 28px;
+  display: block;
+}
+
+.confirm-row-spec {
+  font-size: 22px;
+  color: #999;
+  display: block;
+  margin-top: 4px;
+}
+
+.confirm-row-price {
+  font-size: 24px;
+  color: #ee0a24;
+  display: block;
+  margin-top: 6px;
+}
+
+.confirm-remark {
+  width: 100%;
+  min-height: 120px;
+  background: #f7f8fa;
+  border-radius: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+  font-size: 26px;
+}
+
+.confirm-pay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+  border-bottom: 1px solid #f2f3f5;
+}
+
+.confirm-pay:last-child {
+  border-bottom: none;
+}
+
+.confirm-pay-label {
+  font-size: 28px;
+}
+
+.confirm-pay-radio {
+  color: #ddd;
+  font-size: 30px;
+}
+
+.confirm-pay-radio-on {
+  color: #ff8f1f;
+}
+
+.confirm-foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(104px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid #f0f1f3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px env(safe-area-inset-bottom);
+  box-sizing: border-box;
+}
+
+.confirm-total {
+  font-size: 32px;
+  font-weight: 600;
+  color: #ee0a24;
+}
+
+.confirm-submit {
+  background: #ff8f1f;
+  color: #fff;
+  border-radius: 999px;
+  padding: 20px 56px;
+  font-size: 28px;
+}
+
+.confirm-submit-disabled {
+  background: #e8e8e8;
+  color: #aaa;
+}

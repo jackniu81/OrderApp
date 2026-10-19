@@ -1,0 +1,33 @@
+.closed-wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+
+.closed-icon {
+  font-size: 96px;
+  margin-bottom: 24px;
+}
+
+.closed-title {
+  font-size: 38px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.closed-sub {
+  font-size: 28px;
+  color: #999;
+  margin-bottom: 24px;
+}
+
+.closed-notice {
+  font-size: 26px;
+  color: #ff8f1f;
+  background: #fff7e6;
+  padding: 12px 24px;
+  border-radius: 12px;
+}

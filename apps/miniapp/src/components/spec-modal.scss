@@ -1,0 +1,151 @@
+.spec-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+}
+
+.spec-sheet {
+  width: 100%;
+  max-height: 75vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 32px 32px calc(32px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.spec-err {
+  color: #999;
+  font-size: 28px;
+}
+
+.spec-head {
+  display: flex;
+  margin-bottom: 24px;
+}
+
+.spec-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 16px;
+  margin-right: 20px;
+  background: #f2f3f5;
+}
+
+.spec-head-info {
+  flex: 1;
+}
+
+.spec-name {
+  font-size: 34px;
+  font-weight: 600;
+  display: block;
+}
+
+.spec-desc {
+  font-size: 24px;
+  color: #999;
+  margin-top: 8px;
+  display: block;
+}
+
+.spec-group {
+  margin-bottom: 24px;
+}
+
+.spec-group-title {
+  font-size: 28px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.spec-required {
+  color: #ee0a24;
+  font-size: 24px;
+}
+
+.spec-group-type {
+  color: #bbb;
+  font-size: 22px;
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+.spec-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.spec-option {
+  padding: 10px 24px;
+  border-radius: 999px;
+  background: #f5f6f8;
+  color: #555;
+  font-size: 26px;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spec-option-active {
+  background: #fff3e0;
+  color: #ff8f1f;
+  border-color: #ff8f1f;
+}
+
+.spec-delta {
+  font-size: 22px;
+}
+
+.spec-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.spec-qty {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.spec-qty-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: #f5f6f8;
+  text-align: center;
+  line-height: 56px;
+  font-size: 30px;
+}
+
+.spec-qty-num {
+  font-size: 30px;
+  min-width: 40px;
+  text-align: center;
+}
+
+.spec-confirm {
+  flex: 1;
+  margin-left: 32px;
+  background: #ff8f1f;
+  color: #fff;
+  border-radius: 999px;
+  padding: 18px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 28px;
+}
+
+.spec-price {
+  font-weight: 600;
+}
