@@ -1,9 +1,11 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../common/redis.service';
 import { MenuService } from '../menu/menu.service';
 import { ProductService } from '../product/product.service';
 import { BizException } from '../common/biz-exception';
+import { PREDEDUCT_KEY_PREFIX } from '../order/order.service';
 
 /**
  * 商品管理（商家端）
@@ -15,6 +17,7 @@ export class AdminProductService {
     private readonly prisma: PrismaService,
     private readonly menuService: MenuService,
     private readonly productService: ProductService,
+    private readonly redis: RedisService,
   ) {}
 
   private genId(): string {
@@ -231,5 +234,7 @@ export class AdminProductService {
   private async refresh(merchantId: string, productId: string) {
     await this.menuService.invalidateMenu(merchantId);
     await this.productService.invalidate(productId);
+    // 预扣计数是 DB 库存的镜像，改库存后删掉让下一次下单按最新库存重新初始化
+    await this.redis.client.del(PREDEDUCT_KEY_PREFIX + productId);
   }
 }

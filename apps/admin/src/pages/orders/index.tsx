@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Radio, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
-import { acceptOrder, completeOrder, listOrders } from '../../services/order';
+import { acceptOrder, completeOrder, confirmPaymentOrder, listOrders } from '../../services/order';
 import { ApiError } from '../../services/request';
 import { formatPrice, formatTime } from '../../utils/format';
 import { ADMIN_ORDER_STATUSES, PAY_METHOD_TEXT, STATUS_COLOR, STATUS_TEXT, availableActions } from '../../utils/order-status';
@@ -56,9 +56,12 @@ export default function OrdersPage() {
     };
   }, [load]);
 
-  const runAction = async (row: OrderInfo, action: 'accept' | 'complete') => {
+  const runAction = async (row: OrderInfo, action: 'confirm_payment' | 'accept' | 'complete') => {
     try {
-      if (action === 'accept') {
+      if (action === 'confirm_payment') {
+        await confirmPaymentOrder(row.id);
+        message.success(`已确认收款：${row.outTradeNo}`);
+      } else if (action === 'accept') {
         await acceptOrder(row.id);
         message.success(`已接单：${row.outTradeNo}`);
       } else {
@@ -113,9 +116,14 @@ export default function OrdersPage() {
       title: '操作',
       width: 220,
       render: (_, row) => {
-        const actions = availableActions(row.status);
+        const actions = availableActions(row.status, row.payMethod);
         return (
           <Space>
+            {actions.includes('confirm_payment') ? (
+              <Button size="small" type="primary" onClick={() => void runAction(row, 'confirm_payment')}>
+                确认收款
+              </Button>
+            ) : null}
             {actions.includes('accept') ? (
               <Button size="small" type="primary" onClick={() => void runAction(row, 'accept')}>
                 接单

@@ -16,7 +16,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { acceptOrder, cancelOrder, completeOrder, getOrder, printOrder } from '../../services/order';
+import { acceptOrder, cancelOrder, completeOrder, confirmPaymentOrder, getOrder, printOrder } from '../../services/order';
 import { listPrinters } from '../../services/printer';
 import { ApiError } from '../../services/request';
 import { formatPrice, formatTime } from '../../utils/format';
@@ -75,11 +75,15 @@ export default function OrderDetailPage() {
     return () => window.removeEventListener('admin:order-status', onStatusEvent);
   }, [id, load]);
 
-  const runAction = async (action: 'accept' | 'complete') => {
+  const runAction = async (action: 'confirm_payment' | 'accept' | 'complete') => {
     setActing(true);
     try {
-      if (action === 'accept') await acceptOrder(id);
+      if (action === 'confirm_payment') await confirmPaymentOrder(id);
+      else if (action === 'accept') await acceptOrder(id);
       else await completeOrder(id);
+      message.success(
+        action === 'confirm_payment' ? '已确认收款' : action === 'accept' ? '已接单' : '已出餐',
+      );
       await load();
     } catch (e) {
       showError(e);
@@ -152,7 +156,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  const actions = availableActions(order.status);
+  const actions = availableActions(order.status, order.payMethod);
 
   return (
     <Card
@@ -167,6 +171,11 @@ export default function OrderDetailPage() {
       }
       extra={
         <Space>
+          {actions.includes('confirm_payment') ? (
+            <Button type="primary" loading={acting} onClick={() => void runAction('confirm_payment')}>
+              确认收款
+            </Button>
+          ) : null}
           {actions.includes('accept') ? (
             <Button type="primary" loading={acting} onClick={() => void runAction('accept')}>
               接单
@@ -189,7 +198,7 @@ export default function OrderDetailPage() {
       <Descriptions column={2} size="small" style={{ marginBottom: 16 }}>
         <Descriptions.Item label="下单时间">{formatTime(order.createdAt)}</Descriptions.Item>
         <Descriptions.Item label="支付方式">
-          {PAY_METHOD_TEXT[order.payMethod]}（{order.payStatus === 'paid' ? '已支付' : order.payStatus === 'pending' ? '支付中' : '未支付'}）
+          {PAY_METHOD_TEXT[order.payMethod]}（{order.payStatus === 'paid' ? '已支付' : order.payMethod === 'on_site' ? '待到店收款' : '未支付'}）
         </Descriptions.Item>
         <Descriptions.Item label="支付时间">{formatTime(order.paidAt)}</Descriptions.Item>
         <Descriptions.Item label="接单时间">{formatTime(order.acceptedAt)}</Descriptions.Item>

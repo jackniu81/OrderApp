@@ -2,6 +2,7 @@ import type { OrderStatus, PayMethod } from '../types';
 
 /** 商家可见的状态集合与流转（specs/02-domain.md 状态机） */
 export const ADMIN_ORDER_STATUSES: OrderStatus[] = [
+  'pending_payment',
   'pending_accept',
   'making',
   'ready',
@@ -40,7 +41,13 @@ export const PAY_METHOD_TEXT: Record<PayMethod, string> = {
 };
 
 /** 商家当前可执行的操作（可取餐后由顾客确认取餐流转为 completed，状态机不允许商家取消） */
-export function availableActions(status: OrderStatus): ('accept' | 'complete' | 'cancel')[] {
+export function availableActions(
+  status: OrderStatus,
+  payMethod: PayMethod,
+): ('confirm_payment' | 'accept' | 'complete' | 'cancel')[] {
+  if (status === 'pending_payment') {
+    return payMethod === 'on_site' ? ['confirm_payment', 'cancel'] : ['cancel'];
+  }
   if (status === 'pending_accept') return ['accept', 'cancel'];
   if (status === 'making') return ['complete', 'cancel'];
   return [];

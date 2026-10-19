@@ -22,6 +22,11 @@ export function completeOrder(id: string): Promise<OrderInfo> {
   return request<OrderInfo>(`/admin/orders/${encodeURIComponent(id)}/complete`, { method: 'POST', body: {} });
 }
 
+/** 到店收款确认（specs/03-api.md §6.10），仅 on_site 待支付订单 */
+export function confirmPaymentOrder(id: string): Promise<OrderInfo> {
+  return request<OrderInfo>(`/admin/orders/${encodeURIComponent(id)}/confirm-payment`, { method: 'POST', body: {} });
+}
+
 export function cancelOrder(id: string, reason: string): Promise<OrderInfo> {
   return request<OrderInfo>(`/admin/orders/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: { reason } });
 }
