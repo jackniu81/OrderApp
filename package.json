@@ -16,7 +16,10 @@
     "ci": "npm run ci -w server",
     "miniapp:build": "npm run build:weapp -w miniapp",
     "miniapp:typecheck": "npm run typecheck -w miniapp",
-    "miniapp:test": "npm run test -w miniapp"
+    "miniapp:test": "npm run test -w miniapp",
+    "admin:dev": "npm run dev -w admin",
+    "admin:build": "npm run build -w admin",
+    "admin:typecheck": "npm run typecheck -w admin"
   },
   "engines": {
     "node": ">=20"

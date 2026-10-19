@@ -88,4 +88,26 @@ describe('PrintService', () => {
     expect(err.getCode()).toBe(4001);
     expect(driverMock.submit).not.toHaveBeenCalled();
   });
+
+  it('指定 printerId 时按该打印机出票', async () => {
+    const second = { ...printer, id: 'pr002', name: '后厨打印机', sn: 'SN456' };
+    prismaMock.printer.findFirst.mockResolvedValue(second);
+
+    await service.printOrder('ord1', 'pr002');
+
+    expect(prismaMock.printer.findFirst).toHaveBeenCalledWith({ where: { id: 'pr002', merchantId: 'm001' } });
+    expect(driverMock.submit).toHaveBeenCalledWith(second, expect.any(String));
+  });
+
+  it('指定的打印机不属于本门店抛 4001', async () => {
+    prismaMock.printer.findFirst.mockResolvedValue(null);
+    let err: any;
+    try {
+      await service.printOrder('ord1', 'pr999');
+    } catch (e) {
+      err = e;
+    }
+    expect(err.getCode()).toBe(4001);
+    expect(err.message).toBe('打印机不存在');
+  });
 });

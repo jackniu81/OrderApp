@@ -21,21 +21,24 @@ export class PrintService {
   /**
    * 打印订单小票
    * - 订单不存在 → 1004
+   * - 未指定 printerId 时按添加顺序取门店第一台打印机
    * - 未配置打印机或打印机离线 → 4001
    */
-  async printOrder(orderId: string): Promise<{ printId: string }> {
+  async printOrder(orderId: string, printerId?: string): Promise<{ printId: string }> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: { items: true },
     });
     if (!order) throw new BizException(1004, '订单不存在', HttpStatus.OK);
 
-    const printer = await this.prisma.printer.findFirst({
-      where: { merchantId: order.merchantId },
-      orderBy: { createdAt: 'asc' },
-    });
+    const printer = printerId
+      ? await this.prisma.printer.findFirst({ where: { id: printerId, merchantId: order.merchantId } })
+      : await this.prisma.printer.findFirst({
+          where: { merchantId: order.merchantId },
+          orderBy: { createdAt: 'asc' },
+        });
     if (!printer) {
-      throw new BizException(4001, '打印机离线', HttpStatus.SERVICE_UNAVAILABLE);
+      throw new BizException(4001, printerId ? '打印机不存在' : '未配置打印机', HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     if (!(await this.driver.isOnline(printer))) {

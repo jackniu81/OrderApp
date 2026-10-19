@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
 import { MerchantController } from './merchant.controller';
 import { MerchantService, SceneCodec } from './merchant.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +11,9 @@ const mockMerchantService = {
   toPublicDto: jest.fn(),
 };
 
+/** Guard 校验后的请求对象（单测不经过 HTTP 层，直接构造） */
+const adminReq = (merchantId: string) => ({ admin: { merchantId } }) as any;
+
 describe('MerchantController', () => {
   let controller: MerchantController;
 
@@ -19,6 +23,8 @@ describe('MerchantController', () => {
       providers: [
         { provide: MerchantService, useValue: mockMerchantService },
         { provide: PrismaService, useValue: {} },
+        // @UseGuards(AdminAuthGuard) 会被实例化，但控制器单测不经过 HTTP 层， stub 依赖即可
+        { provide: JwtService, useValue: {} },
       ],
     }).compile();
 
@@ -73,10 +79,17 @@ describe('MerchantController', () => {
       mockMerchantService.update.mockResolvedValue(raw);
       mockMerchantService.toPublicDto.mockReturnValue({ id: 'm001', name: '新奶茶店' });
 
-      const result = await controller.update({ id: 'm001' }, { name: '新奶茶店' });
+      const result = await controller.update({ id: 'm001' }, { name: '新奶茶店' }, adminReq('m001'));
 
       expect(result.code).toBe(0);
       expect(mockMerchantService.update).toHaveBeenCalledWith('m001', { name: '新奶茶店' });
+    });
+
+    it('更新其他门店设置抛 1003', async () => {
+      await expect(controller.update({ id: 'm002' }, { name: '别人的店' }, adminReq('m001'))).rejects.toMatchObject({
+        response: { code: 1003 },
+      });
+      expect(mockMerchantService.update).not.toHaveBeenCalled();
     });
   });
 });

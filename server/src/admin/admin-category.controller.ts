@@ -1,12 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Query, Param, Body, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Query, Param, Body, HttpCode, UseGuards } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/admin-menu.dto';
+import { AdminAuthGuard } from '../auth/admin-auth.guard';
 
 interface ApiResponse<T> { code: number; message: string; data: T; }
 
 /**
  * 分类管理（商家端，specs/03-api.md §5.1）
  */
+@UseGuards(AdminAuthGuard)
 @Controller('admin/categories')
 export class AdminCategoryController {
   constructor(private readonly categoryService: CategoryService) {}

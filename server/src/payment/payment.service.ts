@@ -1,10 +1,12 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
+import { EventEmitter } from 'events';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../common/redis.service';
 import { BizException } from '../common/biz-exception';
 import { HttpStatus } from '@nestjs/common';
 import { Payment, Order } from '@prisma/client';
 import { PrintService } from '../print/print.service';
+import { EVENT_BUS } from '../order/order.service';
 
 /**
  * 微信 V3 支付参数（传给小程序 wx.requestPayment）
@@ -34,6 +36,7 @@ export class PaymentService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     @Optional() private readonly printService?: PrintService,
+    @Optional() @Inject(EVENT_BUS) private readonly eventBus?: EventEmitter,
   ) {
     this.initSdk();
   }
@@ -218,7 +221,8 @@ export class PaymentService {
 
     this.logger.log(`支付回调处理成功: orderId=${order.id}, outTradeNo=${outTradeNo}, transactionId=${transactionId}`);
 
-    // TODO: 触发 WebSocket 推送顾客 + 商家（Issue #5）
+    // 商家端新单提醒（specs/03-api.md §9.2），推送失败不影响回调结果
+    await this.notifyMerchantNewOrder(order);
 
     // 支付成功自动打印小票（Issue #6，尽力而为，失败不影响回调结果）
     if (this.printService) {
@@ -228,6 +232,21 @@ export class PaymentService {
     }
 
     return { code: 'SUCCESS', message: 'OK' };
+  }
+
+  private async notifyMerchantNewOrder(order: Order): Promise<void> {
+    if (!this.eventBus) return;
+    try {
+      const items = await this.prisma.orderItem.findMany({ where: { orderId: order.id } });
+      this.eventBus.emit('order:new', {
+        orderId: order.id,
+        merchantId: order.merchantId,
+        items: items.map((i) => ({ productName: i.productName, quantity: i.quantity })),
+        totalAmount: order.totalAmount,
+      });
+    } catch (err) {
+      this.logger.warn(`新单推送失败: orderId=${order.id}, ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   /**
