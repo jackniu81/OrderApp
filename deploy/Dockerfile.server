@@ -1,0 +1,44 @@
+# 服务端镜像：NestJS + Prisma
+# 构建上下文必须是仓库根目录（compose 里已配置），以便读取 workspaces 的 package.json 与 lockfile。
+#
+# 基础镜像用 Debian 而非 Alpine：Prisma 5 的 query engine 在 musl + OpenSSL 3 下加载不稳定
+# （报 "Could not parse schema engine response"），Debian slim 是官方支持的组合。
+
+FROM node:20-bookworm-slim AS build
+WORKDIR /repo
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# 先只拷依赖清单，命中 Docker 层缓存
+COPY package.json package-lock.json ./
+COPY server/package.json server/
+COPY apps/admin/package.json apps/admin/
+COPY apps/miniapp/package.json apps/miniapp/
+
+RUN npm ci
+
+COPY . .
+# prisma generate 必须在 nest build 之前：没有生成的类型时 Prisma 查询结果全是隐式 any，tsc 直接报错
+RUN npx prisma generate --schema server/prisma/schema.prisma \
+    && npm run build -w server
+
+FROM node:20-bookworm-slim AS runtime
+WORKDIR /repo
+ENV NODE_ENV=production
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# 运行期只需 server 工作区的产物与依赖
+COPY --from=build /repo/package.json /repo/package-lock.json ./
+COPY --from=build /repo/node_modules ./node_modules
+COPY --from=build /repo/server ./server
+
+WORKDIR /repo/server
+EXPOSE 3000
+
+# 迁移由 compose 的一次性 migrate 服务执行，容器本身只负责启动
+CMD ["node", "dist/main.js"]

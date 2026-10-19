@@ -1,0 +1,21 @@
+# 商家后台镜像：Vite 构建产物 + Nginx
+# 构建上下文同样是仓库根目录。
+
+FROM node:20-alpine AS build
+WORKDIR /repo
+
+COPY package.json package-lock.json ./
+COPY server/package.json server/
+COPY apps/admin/package.json apps/admin/
+COPY apps/miniapp/package.json apps/miniapp/
+
+RUN npm ci
+
+COPY apps/admin apps/admin
+RUN npm run build -w admin
+
+FROM nginx:1.27-alpine AS runtime
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /repo/apps/admin/dist /usr/share/nginx/html
+
+EXPOSE 80
