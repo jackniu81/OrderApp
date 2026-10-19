@@ -30,6 +30,7 @@
 - 顾客端：通过 `Authorization: Bearer <openid_token>` 头传递，token 由微信登录换取
 - 商家端：通过 `Authorization: Bearer <admin_token>` 头传递
 - 未登录或 token 失效返回 `401`
+- 商家端接口若在 query 或 body 中显式携带 `merchantId`，必须与 token 所属门店一致，否则返回 `1003`；路径参数形式的资源 ID（订单、打印机等）在服务层校验归属，跨门店按 `1003`（订单）或 `1004`（打印机，不暴露资源是否存在）拒绝
 
 ### 1.4 分页
 
@@ -475,6 +476,12 @@ GET /api/v1/orders?page=1&pageSize=20
 
 `status` 可选：`pending_accept`、`making`、`ready`、`completed`、`cancelled`、`refunding`、`refunded`。不传则返回全部。
 
+**商家订单详情**
+
+`GET /api/v1/admin/orders/:id`
+
+返回订单及其 `items`（含规格快照），仅允许查询本门店订单：其他门店的订单返回 `1003`，不存在返回 `1004`。
+
 ### 6.5 商家接单
 
 `POST /api/v1/admin/orders/:id/accept`
@@ -582,7 +589,8 @@ GET /api/v1/orders?page=1&pageSize=20
         "name": "前台打印机",
         "type": "feie",
         "sn": "xxxxxx",
-        "online": true
+        "online": true,
+        "createdAt": "2026-10-17T10:00:00+08:00"
       }
     ]
   }
@@ -604,9 +612,25 @@ GET /api/v1/orders?page=1&pageSize=20
 }
 ```
 
+`type` 可选：`feie`、`xprinter`、`sunmi`；同门店重复 `sn` 返回 `1001`。
+
+### 8.2.1 删除打印机（商家端）
+
+`DELETE /api/v1/admin/printers/:id`
+
+**错误码：** 不属于本门店或不存在返回 `1004`。
+
 ### 8.3 打印小票
 
 `POST /api/v1/admin/orders/:id/print`
+
+**Request（可选）：**
+
+```json
+{ "printerId": "pr001" }
+```
+
+不传 `printerId` 时按添加顺序使用门店第一台打印机。
 
 **Response:**
 
@@ -617,7 +641,7 @@ GET /api/v1/orders?page=1&pageSize=20
 }
 ```
 
-**错误码：** 打印机离线返回 `4001`。
+**错误码：** 打印机离线或未配置返回 `4001`；指定打印机不属于本门店返回 `4001`。
 
 ---
 
@@ -625,14 +649,18 @@ GET /api/v1/orders?page=1&pageSize=20
 
 ### 9.1 连接
 
-- 顾客端：`wss://api.example.com/ws?token=<openid_token>`
-- 商家端：`wss://api.example.com/ws/admin?token=<admin_token>&merchantId=m001`
+统一连接 `wss://api.example.com/ws`（不带 token 参数），连接后由客户端发送订阅消息进入对应房间：
+
+- 顾客端：`{ "event": "subscribe:customer", "data": { "openid": "oX" } }` → 房间 `openid_oX`
+- 商家端：`{ "event": "subscribe:merchant", "data": { "merchantId": "m001" } }` → 房间 `merchant_m001`
+
+服务端订阅成功后回 `{ "event": "subscribed", "room": "..." }`。
 
 ### 9.2 事件列表
 
 | 事件名 | 方向 | 负载 | 说明 |
 |---|---|---|---|
-| `order:new` | S→商家端 | `{ orderId, items, totalAmount }` | 新订单提醒 |
+| `order:new` | S→商家端 | `{ orderId, items, totalAmount }` | 新订单提醒（支付成功回调处理完成后推送） |
 | `order:status` | S→顾客端 | `{ orderId, status, updatedAt }` | 订单状态变更 |
 | `order:status` | S→商家端 | `{ orderId, status, updatedAt }` | 订单状态变更 |
 | `ping` | C→S | `{}` | 心跳 |
@@ -653,3 +681,4 @@ GET /api/v1/orders?page=1&pageSize=20
 | 日期 | 版本 | 变更内容 |
 |---|---|---|
 | 2026-10-17 | v0.1.0 | 初版接口定义（仅自提，无桌台） |
+| 2026-10-19 | v0.1.1 | 商家后台（#11）：新增商家订单详情 `GET /admin/orders/:id`、删除打印机 `DELETE /admin/printers/:id`、打印小票支持可选 `printerId`；明确商家端接口跨门店访问的拒绝方式（见 specs/changes/2026-10-19-admin-issue11.md）；§9.1 连接方式按实现修订为统一 `/ws` + 订阅消息 |

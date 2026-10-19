@@ -1,6 +1,9 @@
-import { Controller, Get, Put, Query, Param, Body, HttpCode } from '@nestjs/common';
+import { Controller, Get, Put, Query, Param, Body, HttpCode, HttpStatus, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 import { MerchantService } from './merchant.service';
 import { ResolveMerchantQueryDto, GetMerchantParamDto, UpdateMerchantDto } from './dto/merchant.dto';
+import { BizException } from '../common/biz-exception';
+import { AdminAuthGuard, AdminPrincipal } from '../auth/admin-auth.guard';
 
 interface ApiResponse<T> {
   code: number;
@@ -56,14 +59,19 @@ export class MerchantController {
 
   /**
    * PUT /api/v1/merchant/:id
-   * 更新门店设置（商家端，后续加 Guard）
+   * 更新门店设置（商家端）
    */
+  @UseGuards(AdminAuthGuard)
   @Put(':id')
   @HttpCode(200)
   async update(
     @Param() param: GetMerchantParamDto,
     @Body() dto: UpdateMerchantDto,
+    @Req() req: Request & { admin?: AdminPrincipal },
   ): Promise<ApiResponse<PublicMerchant>> {
+    if (param.id !== req.admin!.merchantId) {
+      throw new BizException(1003, '无权访问其他门店', HttpStatus.FORBIDDEN);
+    }
     const merchant = await this.merchantService.update(param.id, dto);
     return { code: 0, message: 'ok', data: this.merchantService.toPublicDto(merchant) };
   }

@@ -399,6 +399,22 @@ export class OrderService {
     return order;
   }
 
+  /**
+   * 商家端订单详情（校验归属）
+   * 订单不存在 → 1004；属于其他门店 → 1003
+   */
+  async getForMerchant(orderId: string, merchantId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) throw new BizException(1004, '订单不存在', HttpStatus.OK);
+    if (order.merchantId !== merchantId) {
+      throw new BizException(1003, '无权操作该订单', HttpStatus.FORBIDDEN);
+    }
+    return order;
+  }
+
   /** 顾客订单列表 */
   async listByOpenid(openid: string, page: number, pageSize: number) {
     const where = { openid };

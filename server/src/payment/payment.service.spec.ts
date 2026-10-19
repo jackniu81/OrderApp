@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { PaymentService } from './payment.service';
 import { BizException } from '../common/biz-exception';
 
@@ -26,6 +27,11 @@ describe('PaymentService', () => {
       payment: {
         findUnique: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue(null),
+      },
+      orderItem: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'oi1', productName: '珍珠奶茶', quantity: 2 },
+        ]),
       },
       $transaction: jest.fn().mockImplementation((cb) => {
         const tx = {
@@ -130,6 +136,44 @@ describe('PaymentService', () => {
     it('缺 out_trade_no → 返回 FAIL', async () => {
       const result = await service.handleWxNotify({});
       expect(result).toEqual({ code: 'FAIL', message: '参数错误' });
+    });
+  });
+
+  describe('新单推送（商家端 WS 提醒）', () => {
+    it('支付成功后向 EVENT_BUS 发出 order:new', async () => {
+      const bus = new EventEmitter();
+      const received: any[] = [];
+      bus.on('order:new', (payload) => received.push(payload));
+      const svc = new PaymentService(prismaMock, redisMock, undefined, bus);
+
+      await svc.handleWxNotify({
+        out_trade_no: 'm001_20261017103000_0001',
+        transaction_id: '4200000000000000000000',
+        result_code: 'SUCCESS',
+      });
+
+      expect(received).toEqual([
+        {
+          orderId: 'ord1',
+          merchantId: 'm001',
+          items: [{ productName: '珍珠奶茶', quantity: 2 }],
+          totalAmount: 3600,
+        },
+      ]);
+    });
+
+    it('支付失败不推送新单', async () => {
+      const bus = new EventEmitter();
+      const received: any[] = [];
+      bus.on('order:new', (payload) => received.push(payload));
+      const svc = new PaymentService(prismaMock, redisMock, undefined, bus);
+
+      await svc.handleWxNotify({
+        out_trade_no: 'm001_20261017103000_0001',
+        result_code: 'FAIL',
+      });
+
+      expect(received).toHaveLength(0);
     });
   });
 

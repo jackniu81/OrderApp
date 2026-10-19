@@ -1,12 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Query, Param, Body, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Query, Param, Body, HttpCode, UseGuards } from '@nestjs/common';
 import { SpecGroupService } from './spec-group.service';
 import { CreateSpecGroupDto, UpdateSpecGroupDto } from './dto/admin-menu.dto';
+import { AdminAuthGuard } from '../auth/admin-auth.guard';
 
 interface ApiResponse<T> { code: number; message: string; data: T; }
 
 /**
  * 规格组管理（商家端，specs/03-api.md §5.3）
  */
+@UseGuards(AdminAuthGuard)
 @Controller('admin/spec-groups')
 export class AdminSpecGroupController {
   constructor(private readonly specGroupService: SpecGroupService) {}
