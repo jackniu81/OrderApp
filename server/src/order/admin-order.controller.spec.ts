@@ -11,6 +11,7 @@ const mockOrderService = {
   accept: jest.fn(),
   complete: jest.fn(),
   cancel: jest.fn(),
+  confirmOnSitePayment: jest.fn(),
 };
 
 const mockPrintService = {
@@ -117,6 +118,15 @@ describe('AdminOrderController', () => {
       const result = await controller.cancel('ord1', { reason: '门店打烊' }, req);
       expect(result.code).toBe(0);
       expect(mockOrderService.cancel).toHaveBeenCalledWith('ord1', '门店打烊');
+    });
+
+    it('confirm-payment 先校验归属再确认收款', async () => {
+      mockOrderService.getForMerchant.mockResolvedValue({ id: 'ord1', merchantId: 'm001' });
+      mockOrderService.confirmOnSitePayment.mockResolvedValue({ id: 'ord1', status: 'pending_accept' });
+      const result = await controller.confirmPayment('ord1', req);
+      expect(result.code).toBe(0);
+      expect(mockOrderService.getForMerchant).toHaveBeenCalledWith('ord1', 'm001');
+      expect(mockOrderService.confirmOnSitePayment).toHaveBeenCalledWith('ord1');
     });
 
     it('print 透传 printerId', async () => {

@@ -1,9 +1,30 @@
+# 构建上下文是仓库根目录，必须排除宿主机的依赖与产物，
+# 否则 docker build 会把几百 MB 的 node_modules 传进 daemon，且覆盖镜像内的 npm ci 结果。
 node_modules
-npm-debug.log
-.env
-*.local
+**/node_modules
 .git
 .gitignore
-specs
-temp.md
+dist
+**/dist
+**/.taro-cache
+.qoder
 .qoder-pr-body.md
+temp.md
+*.log
+npm-debug.log
+*.local
+.env
+.env.*
+!.env.example
+.deploy.env
+**/.env
+**/.env.*
+!**/.env.example
+!**/.deploy.env.example
+docker-compose.yml
+docker-compose.prod.yml
+docs
+specs
+README.md
+AGENTS.md
+LICENSE

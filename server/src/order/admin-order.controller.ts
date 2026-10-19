@@ -17,6 +17,7 @@ class PrintOrderDto {
 interface ApiResponse<T> { code: number; message: string; data: T; }
 
 const ADMIN_ORDER_STATUSES = [
+  'pending_payment',
   'pending_accept',
   'making',
   'ready',
@@ -100,6 +101,17 @@ export class AdminOrderController {
   ): Promise<ApiResponse<unknown>> {
     await this.assertOwned(id, req);
     const data = await this.orderService.cancel(id, dto.reason);
+    return { code: 0, message: 'ok', data };
+  }
+
+  /** POST /admin/orders/:id/confirm-payment 到店收款确认（仅 on_site 待支付订单） */
+  @Post(':id/confirm-payment') @HttpCode(200)
+  async confirmPayment(
+    @Param('id') id: string,
+    @Req() req: Request & { admin?: AdminPrincipal },
+  ): Promise<ApiResponse<unknown>> {
+    await this.assertOwned(id, req);
+    const data = await this.orderService.confirmOnSitePayment(id);
     return { code: 0, message: 'ok', data };
   }
 

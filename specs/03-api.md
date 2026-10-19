@@ -424,7 +424,7 @@ GET /api/v1/orders?page=1&pageSize=20
 
 到店支付时 `payParams` 为 `null`，`status` 为 `pending_payment`（到店）。
 
-**错误码：** 库存不足返回 `2001`，商品已下架返回 `2003`。
+**错误码：** 库存不足返回 `2001`，商品已下架返回 `2003`，门店未开启到店支付而选择 `on_site` 返回 `1001`。
 
 ### 6.2 查询订单详情
 
@@ -474,7 +474,7 @@ GET /api/v1/orders?page=1&pageSize=20
 
 `GET /api/v1/admin/orders?merchantId=m001&status=pending_accept&page=1&pageSize=20`
 
-`status` 可选：`pending_accept`、`making`、`ready`、`completed`、`cancelled`、`refunding`、`refunded`。不传则返回全部。
+`status` 可选：`pending_payment`、`pending_accept`、`making`、`ready`、`completed`、`cancelled`、`refunding`、`refunded`。不传则返回全部。
 
 **商家订单详情**
 
@@ -488,6 +488,8 @@ GET /api/v1/orders?page=1&pageSize=20
 
 **Response:** 成功返回 `code: 0`，订单状态变为 `making`。
 **错误码：** 状态不允许返回 `2002`。
+
+> §6.5 ~ §6.10 的状态流转接口统一返回流转后的订单对象，且**必定带 `items`**（与 §6.4 详情一致）。客户端拿到响应可直接渲染，无需再查一次详情。
 
 ### 6.6 商家完成订单
 
@@ -526,6 +528,15 @@ GET /api/v1/orders?page=1&pageSize=20
 `POST /api/v1/orders/:id/finish`
 
 > 顾客或商家均可调用，订单状态从 `ready` 变为 `completed`。
+
+### 6.10 商家确认到店收款
+
+`POST /api/v1/admin/orders/:id/confirm-payment`
+
+> 顾客选择到店支付时订单停在 `pending_payment`（`payMethod = on_site`），顾客到店付现后由商家调用本接口确认，效果等价于微信支付成功：状态转 `pending_accept`、`payStatus` 置 `paid`，并向商家房间推送 `order:new`、向顾客房间推送 `order:status`。
+
+**Response:** 成功返回 `code: 0`，订单状态变为 `pending_accept`。
+**错误码：** 非 `on_site` 订单返回 `2002`；状态不允许（如已接单）返回 `2002`；其他门店订单返回 `1003`。
 
 ---
 
@@ -682,3 +693,4 @@ GET /api/v1/orders?page=1&pageSize=20
 |---|---|---|
 | 2026-10-17 | v0.1.0 | 初版接口定义（仅自提，无桌台） |
 | 2026-10-19 | v0.1.1 | 商家后台（#11）：新增商家订单详情 `GET /admin/orders/:id`、删除打印机 `DELETE /admin/printers/:id`、打印小票支持可选 `printerId`；明确商家端接口跨门店访问的拒绝方式（见 specs/changes/2026-10-19-admin-issue11.md）；§9.1 连接方式按实现修订为统一 `/ws` + 订阅消息 |
+| 2026-10-19 | v0.1.2 | 主链路联调（#12）：新增到店收款确认 `POST /admin/orders/:id/confirm-payment`、商家订单列表 `status` 支持 `pending_payment`、`on_site` 下单校验门店开关、取消订单归还数据库库存（见 specs/changes/2026-10-19-integration-issue12.md） |

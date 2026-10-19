@@ -1,0 +1,114 @@
+# 单机生产部署：MySQL + Redis + NestJS 服务端 + Nginx（商家后台）
+# 用法见 docs/deployment.md，环境变量从 .deploy.env 读取：
+#   docker compose --env-file .deploy.env -f docker-compose.prod.yml up -d --build
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: order-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-orderapp}
+      TZ: Asia/Shanghai
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # 只绑回环，避免数据库直接暴露到公网（同机反代走 docker 网络即可）
+    ports:
+      - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: order-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 一次性任务：应用已提交的 Prisma 迁移，成功后退出
+  migrate:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.server
+    image: orderapp-server:latest
+    container_name: order-migrate
+    restart: "no"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://root:${DB_ROOT_PASSWORD}@mysql:3306/${DB_NAME:-orderapp}?schema=public
+    command: ["npx", "prisma", "migrate", "deploy", "--schema", "prisma/schema.prisma"]
+
+  server:
+    image: orderapp-server:latest
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.server
+    container_name: order-server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: mysql://root:${DB_ROOT_PASSWORD}@mysql:3306/${DB_NAME:-orderapp}?schema=public&connection_limit=10&pool_timeout=0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      WX_APPID: ${WX_APPID:-}
+      WX_APPSECRET: ${WX_APPSECRET:-}
+      WX_PAY_MCH_ID: ${WX_PAY_MCH_ID:-}
+      WX_PAY_API_V3_KEY: ${WX_PAY_API_V3_KEY:-}
+      WX_PAY_PRIVATE_KEY_PATH: ${WX_PAY_PRIVATE_KEY_PATH:-}
+      WX_PAY_CERT_PATH: ${WX_PAY_CERT_PATH:-}
+      WX_PAY_NOTIFY_URL: ${WX_PAY_NOTIFY_URL:-}
+      DEFAULT_PAY_ON_SITE_ENABLED: ${DEFAULT_PAY_ON_SITE_ENABLED:-true}
+    # 由 admin(nginx) 反代对外暴露；如需直连调试可改成 "3000:3000"
+    expose:
+      - "3000"
+    healthcheck:
+      # 镜像里没有 wget/curl，用 Node 自带的 fetch 探活
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/v1/merchant/resolve?scene=healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+
+  admin:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.admin
+    image: orderapp-admin:latest
+    container_name: order-admin
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "${HTTP_PORT:-80}:80"
+
+volumes:
+  mysql_data:
+  redis_data:

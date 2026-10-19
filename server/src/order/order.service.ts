@@ -9,7 +9,7 @@ import { canTransition, StateTransitionError, OrderStatus } from './state-machin
 
 export const EVENT_BUS = 'EVENT_BUS';
 
-const PREDEDUCT_KEY_PREFIX = 'stock:pre:';
+export const PREDEDUCT_KEY_PREFIX = 'stock:pre:';
 const PREDEDUCT_TTL_SECONDS = 15 * 60; // 15 分钟超时
 
 /**
@@ -100,6 +100,9 @@ export class OrderService {
     if (!merchant.isOpen) {
       throw new BizException(2000, '门店已打烊，暂停下单', HttpStatus.OK);
     }
+    if (payMethod === 'on_site' && !merchant.payOnSiteEnabled) {
+      throw new BizException(1001, '该门店未开启到店支付', HttpStatus.OK);
+    }
 
     // 2. 加载所有商品（含规格）
     const productIds = items.map((i) => i.productId);
@@ -186,6 +189,9 @@ export class OrderService {
     const preDeductOps: { productId: string; quantity: number }[] = [];
     for (const item of items) {
       const key = PREDEDUCT_KEY_PREFIX + item.productId;
+      const product = products.find((p) => p.id === item.productId)!;
+      // 键缺失（首次下单 / TTL 到期 / Redis 重启）时按 DB 库存初始化，SET NX 保证并发下只有一个写入者
+      await this.redis.client.set(key, String(product.stock), 'NX');
       const remaining = await this.redis.client.decrby(key, item.quantity);
       if (remaining < 0) {
         // 回滚所有已预扣
@@ -194,7 +200,7 @@ export class OrderService {
         }
         throw new BizException(2001, '库存不足', HttpStatus.OK);
       }
-      // 设置 TTL，超时自动释放（通过定时任务扫描，这里加 TTL 做兜底）
+      // TTL 只是缓存有效期，到期后按 DB 库存重新初始化（下单/取消时两处同步增减）
       await this.redis.client.expire(key, PREDEDUCT_TTL_SECONDS);
       preDeductOps.push({ productId: item.productId, quantity: item.quantity });
     }
@@ -317,7 +323,8 @@ export class OrderService {
     }
 
     const data: any = { status: targetStatus, ...(ctx.update || {}) };
-    const updated = await this.prisma.order.update({ where: { id: orderId }, data });
+    // 带上 items：顾客端/后台拿到流转结果直接渲染，不必再查一次详情
+    const updated = await this.prisma.order.update({ where: { id: orderId }, data, include: { items: true } });
 
     this.logger.log(`订单状态流转: ${orderId} ${from} → ${targetStatus}`);
 
@@ -350,10 +357,33 @@ export class OrderService {
   }
 
   /**
+   * 到店收款确认: pending_payment → pending_accept
+   * 顾客到店付现后由商家点确认，效果等价于微信支付回调（置为已支付 + 新单提醒）
+   */
+  async confirmOnSitePayment(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
+    if (!order) throw new BizException(1004, '订单不存在', HttpStatus.OK);
+    if (order.payMethod !== 'on_site') {
+      throw new BizException(2002, '仅到店支付订单可确认收款', HttpStatus.OK);
+    }
+
+    const updated = await this.transition(orderId, 'pending_accept', {
+      update: { payStatus: 'paid', paidAt: new Date() },
+    });
+
+    this.eventBus?.emit('order:new', {
+      orderId: order.id,
+      merchantId: order.merchantId,
+      items: order.items.map((it: any) => ({ productName: it.productName, quantity: it.quantity })),
+      totalAmount: order.totalAmount,
+    });
+
+    return updated;
+  }
+
+  /**
    * 取消订单
-   * - pending_payment → cancelled: 释放预扣
-   * - pending_accept → cancelled: 已支付则自动退款 + 释放库存
-   * - making → cancelled: 已支付则自动退款
+   * 三个可取消状态在下单时都已扣减 Redis 预扣与 DB 库存，取消时两处一并归还
    */
   async cancel(orderId: string, reason: string) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
@@ -368,17 +398,27 @@ export class OrderService {
     const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: 'cancelled', cancelledAt: new Date(), cancelReason: reason },
+      include: { items: true },
     });
 
     this.logger.log(`订单取消: ${orderId}, reason=${reason}, from=${from}`);
 
-    // 副作用: 释放预扣库存（pending_payment 阶段）
-    if (from === 'pending_payment') {
-      await this.releasePreDeduction(
-        orderId,
-        order.items.map((it: any) => ({ productId: it.productId, quantity: it.quantity })),
-      );
-    }
+    this.eventBus?.emit('order:status', {
+      orderId,
+      status: 'cancelled',
+      merchantId: order.merchantId,
+      openid: order.openid,
+      updatedAt: new Date(),
+    });
+
+    // 副作用: 释放库存（下单时 Redis 预扣与 DB 各扣一次，取消时两处都归还）
+    const stockItems = order.items.map((it: any) => ({ productId: it.productId, quantity: it.quantity }));
+    await this.releasePreDeduction(orderId, stockItems);
+    await this.prisma.$transaction(
+      stockItems.map((it) =>
+        this.prisma.product.update({ where: { id: it.productId }, data: { stock: { increment: it.quantity } } }),
+      ),
+    );
 
     // 副作用: 已支付自动退款（Issue #4 PaymentService 已写 TODO，这里标待接）
     if (order.payStatus === 'paid') {

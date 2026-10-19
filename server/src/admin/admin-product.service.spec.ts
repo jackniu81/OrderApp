@@ -19,6 +19,7 @@ describe('AdminProductService', () => {
   let prismaMock: any;
   let menuServiceMock: any;
   let productServiceMock: any;
+  let redisMock: any;
 
   beforeEach(() => {
     prismaMock = {
@@ -40,7 +41,8 @@ describe('AdminProductService', () => {
     };
     menuServiceMock = { invalidateMenu: jest.fn().mockResolvedValue(undefined) };
     productServiceMock = { invalidate: jest.fn().mockResolvedValue(undefined) };
-    service = new AdminProductService(prismaMock, menuServiceMock, productServiceMock);
+    redisMock = { client: { del: jest.fn().mockResolvedValue(1) } };
+    service = new AdminProductService(prismaMock, menuServiceMock, productServiceMock, redisMock);
   });
 
   describe('list', () => {
@@ -165,6 +167,8 @@ describe('AdminProductService', () => {
       });
       expect(menuServiceMock.invalidateMenu).toHaveBeenCalledWith('m001');
       expect(productServiceMock.invalidate).toHaveBeenCalledWith('p001');
+      // 预扣计数镜像必须失效，否则下一次下单仍按旧库存扣减
+      expect(redisMock.client.del).toHaveBeenCalledWith('stock:pre:p001');
     });
 
     it('should throw BizException(1004) when product not found', async () => {

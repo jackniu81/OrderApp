@@ -218,15 +218,18 @@ Order *──1 User（通过 openid）
 
 ### 4.1 预扣与释放
 
-1. **下单时**：预扣库存（Redis `DECR`），订单进入 `pending_payment`
-2. **支付成功**：预扣转为正式扣减，订单进入 `pending_accept`
-3. **支付超时/取消**：释放预扣库存（Redis `INCR`），订单进入 `cancelled`
+1. **下单时**：预扣库存（Redis `DECR`）+ 数据库 CAS 扣减（`stock` -N），订单进入 `pending_payment`
+2. **支付成功**：预扣转正（不再重复扣减），订单进入 `pending_accept`
+3. **订单取消**：Redis `INCR` 与数据库 `stock` +N 一并归还，订单进入 `cancelled`
+
+> Redis 键 `stock:pre:{productId}` 是数据库库存的原子计数镜像：键缺失（首次下单、TTL 到期、Redis 重启）时按当时的 `product.stock` 用 `SET NX` 初始化，再执行 `DECR`，因此无需单独的数据装载步骤，也不会覆盖并发预扣的中间值。
 
 ### 4.2 防超卖
 
 - 预扣使用 Redis 原子操作，`stock < 0` 时回滚并返回 `2001`
 - 数据库层加乐观锁（`stock` 字段 CAS 更新）作为兜底
-- 预扣超时时间：15 分钟未支付自动释放
+- 预扣计数键 TTL 15 分钟，到期后按数据库库存重新初始化
+- **待接入**：超过 15 分钟未支付的订单目前不会自动取消，占用的库存需顾客或商家取消后才归还（自动释放需与支付回调竞态一起处理，见 issue 待办）
 
 ### 4.3 库存扣减时机
 
