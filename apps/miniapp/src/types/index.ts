@@ -103,6 +103,46 @@ export type OrderStatus =
   | 'refunding'
   | 'refunded';
 
+/** 订单明细，服务端直接返回 Prisma OrderItem */
+export interface OrderItemInfo {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: string | null;
+  price: number;
+  quantity: number;
+  specSnapshot: string | null;
+  subtotal: number;
+  remark: string | null;
+}
+
+/** 订单，服务端直接返回 Prisma Order + items，时间为 ISO 字符串或 epoch */
+export interface OrderInfo {
+  id: string;
+  outTradeNo: string;
+  merchantId: string;
+  openid: string;
+  status: OrderStatus;
+  totalAmount: number;
+  payMethod: PayMethod;
+  payStatus: 'unpaid' | 'pending' | 'paid';
+  remark: string | null;
+  createdAt: string;
+  paidAt: string | null;
+  acceptedAt: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  items: OrderItemInfo[];
+}
+
+export interface OrderListResult {
+  list: OrderInfo[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface PaymentStatus {
   outTradeNo: string;
   status: 'unpaid' | 'pending' | 'paid';

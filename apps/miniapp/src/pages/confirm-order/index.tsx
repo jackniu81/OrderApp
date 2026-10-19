@@ -99,7 +99,7 @@ export default function ConfirmOrderPage() {
       } else {
         Taro.showModal({
           title: '支付结果确认中',
-          content: '模拟支付已完成，后端支付状态需微信回调确认。可稍后在订单列表中查看（订单详情页即将上线）。',
+          content: '模拟支付已完成，后端支付状态需微信回调确认。可稍后在「我的订单」中查看状态。',
           showCancel: false,
         });
       }
