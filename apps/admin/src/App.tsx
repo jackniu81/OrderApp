@@ -4,6 +4,8 @@ import {
   CoffeeOutlined,
   DashboardOutlined,
   LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   ProfileOutlined,
   SettingOutlined,
   ShopOutlined,
@@ -43,6 +45,7 @@ function Shell() {
   const { pathname } = useLocation();
   const [pendingCount, setPendingCount] = useState(0);
   const [openKeys, setOpenKeys] = useState<string[]>(openKeysOf(pathname));
+  const [collapsed, setCollapsed] = useState(() => window.innerWidth < 992);
 
   useEffect(() => subscribeNewOrderCount(setPendingCount), []);
 
@@ -136,15 +139,35 @@ function Shell() {
         </Space>
       </Header>
       <Layout>
-        <Sider width={180} theme="light" breakpoint="lg" collapsedWidth={0}>
-          <Menu
-            mode="inline"
-            items={items}
-            openKeys={openKeys}
-            onOpenChange={(keys) => setOpenKeys(keys as string[])}
-            selectedKeys={[pathname]}
-            style={{ height: '100%', borderRight: 0 }}
-          />
+        <Sider
+          width={180}
+          theme="light"
+          collapsible
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
+          collapsedWidth={64}
+          trigger={null}
+          style={{ display: 'flex', flexDirection: 'column' }}
+        >
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            <Menu
+              mode="inline"
+              inlineCollapsed={collapsed}
+              items={items}
+              openKeys={openKeys}
+              onOpenChange={(keys) => setOpenKeys(keys as string[])}
+              selectedKeys={[pathname]}
+              style={{ borderRight: 0 }}
+            />
+          </div>
+          <div style={{ borderTop: '1px solid #f0f0f0', textAlign: 'center', padding: '8px 0' }}>
+            <Button
+              type="text"
+              size="small"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed((v) => !v)}
+            />
+          </div>
         </Sider>
         <Content style={{ padding: 24 }}>
           <Routes>
