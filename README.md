@@ -1,8 +1,17 @@
 # OrderApp
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-green)](https://nodejs.org)
+[![NestJS](https://img.shields.io/badge/NestJS-10-red)](https://nestjs.com)
+[![Tests](https://img.shields.io/badge/tests-116%20passing-brightgreen)](#测试)
+
 单店自提点餐可复用模板（微信小程序 + 商家后台 + NestJS 服务端）。
 
 > 第一版聚焦「远程下单 · 到店自提」场景，按多端标准编写，为后续支付宝/抖音端预留适配层。详细需求见 [`specs/`](./specs)。
+
+## 项目状态
+
+**v0.1（P0）已交付** —— 需求 F-01~F-09 全部完成（issue #1–#12 已关闭），服务端 15 个测试套件 / 116 个用例全部通过，单机 docker-compose 部署链路打通（见[部署手册](./docs/deployment.md)）。当前进入 P1 规划阶段（堂食桌台、加菜催单、数据看板等，见[后续规划](#后续规划)）。
 
 ## 架构总览
 
@@ -75,7 +84,7 @@ Monorepo 基于 npm workspaces（`apps/*` + `server`），本地依赖通过 `do
 
 ### 后续规划
 
-- **P1**：堂食桌台、加菜催单、热销榜与搜索、营业数据看板、店员权限分离、分单打印。
+- **P1**：堂食桌台、加菜催单、热销榜与搜索、营业数据看板、店员权限分离、分单打印（尚未拆分为 issue，范围以 [`specs/01-requirements.md`](./specs/01-requirements.md#32-p1第二版) 为准）。
 - **P2**：会员/积分/优惠券、多门店与连锁看板、抖音 / 支付宝端。
 
 ## 快速开始
@@ -184,4 +193,4 @@ npm run ci -w server   # tsc 类型检查 + nest build + jest
 
 ## License
 
-见 [`LICENSE`](./LICENSE)。
+[MIT](./LICENSE)，详见 [`LICENSE`](./LICENSE)。
