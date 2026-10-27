@@ -104,4 +104,24 @@ describe('ProductService', () => {
       expect(redisMock.del).toHaveBeenCalledWith('product:p1');
     });
   });
+
+  describe('listPresetImages', () => {
+    it('should return an array of server-served static paths', () => {
+      const list = service.listPresetImages();
+      expect(Array.isArray(list)).toBe(true);
+      // 静态图托管在 api/v1 前缀下，与 product.image 存值保持一致
+      list.forEach((p) => expect(p).toMatch(/^\/api\/v1\/static\/products\/.+\.(png|jpe?g|gif|webp)$/i));
+    });
+
+    it('should include the committed seed presets', () => {
+      const list = service.listPresetImages();
+      expect(list).toContain('/api/v1/static/products/milk-tea.png');
+      expect(list).toContain('/api/v1/static/products/fries.png');
+    });
+
+    it('should return sorted paths', () => {
+      const list = service.listPresetImages();
+      expect(list).toEqual([...list].sort());
+    });
+  });
 });

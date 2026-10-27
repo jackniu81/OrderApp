@@ -15,3 +15,13 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+/* 订单管理无子菜单，收起侧边栏后 hover 出现 tooltip（内容复用 label，含 Badge），
+   tooltip 根节点类名为 ant-menu-inline-collapsed-tooltip；
+   去掉 tooltip 的深色背景（rgba(0,0,0,0.85)）及同色箭头，badge 红底保留 */
+.ant-menu-inline-collapsed-tooltip.ant-tooltip,
+.ant-menu-inline-collapsed-tooltip .ant-tooltip-inner,
+.ant-menu-inline-collapsed-tooltip .ant-tooltip-arrow::before
+{
+  background: #fff;
+}

@@ -5,6 +5,7 @@ import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import { menuApi } from '../../services/api';
 import { cart, useCart } from '../../stores/cart';
 import { formatPrice } from '../../utils/format';
+import { resolveImageUrl } from '../../utils/image-url';
 import { categoryIcon } from '../../utils/category-icon';
 import SpecModal from '../../components/SpecModal';
 import CartDrawer from '../../components/CartDrawer';
@@ -241,7 +242,7 @@ export default function MenuPage() {
                   <Text className="menu-product-name">{p.name}</Text>
                   <View className="menu-product-body">
                     {p.image ? (
-                      <Image className="menu-product-img" src={p.image} mode="aspectFill" />
+                      <Image className="menu-product-img" src={resolveImageUrl(p.image)} mode="aspectFill" />
                     ) : (
                       <View className="menu-product-img menu-product-img-placeholder" />
                     )}

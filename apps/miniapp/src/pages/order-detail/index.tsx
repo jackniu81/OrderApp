@@ -5,6 +5,7 @@ import { orderApi } from '../../services/api';
 import { subscribeOrderStatus } from '../../services/order-ws';
 import { getCustomerId } from '../../utils/customer';
 import { formatPrice, formatTime } from '../../utils/format';
+import { resolveImageUrl } from '../../utils/image-url';
 import {
   PROGRESS_STEPS,
   canFinish,
@@ -119,7 +120,7 @@ export default function OrderDetailPage() {
         {order.items.map((item) => (
           <View className="detail-item" key={item.id}>
             {item.productImage ? (
-              <Image className="detail-item-img" src={item.productImage} mode="aspectFill" />
+              <Image className="detail-item-img" src={resolveImageUrl(item.productImage)} mode="aspectFill" />
             ) : (
               <View className="detail-item-img detail-item-img-ph" />
             )}

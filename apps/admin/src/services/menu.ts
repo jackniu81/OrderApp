@@ -26,6 +26,11 @@ export function listProducts(): Promise<ProductInfo[]> {
   return request<ProductInfo[]>(`/admin/products${buildQuery({ merchantId: currentMerchantId() })}`);
 }
 
+/** 预设商品图清单（服务端托管的静态图路径），供商品图片选择器 */
+export function listPresetImages(): Promise<string[]> {
+  return request<string[]>('/products/presets');
+}
+
 export interface ProductInput {
   categoryId: string;
   name: string;
