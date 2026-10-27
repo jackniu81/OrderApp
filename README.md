@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-green)](https://nodejs.org)
 [![NestJS](https://img.shields.io/badge/NestJS-10-red)](https://nestjs.com)
-[![Tests](https://img.shields.io/badge/tests-116%20passing-brightgreen)](#测试)
+[![Tests](https://img.shields.io/badge/tests-119%20passing-brightgreen)](#测试)
 
 单店自提点餐可复用模板（微信小程序 + 商家后台 + NestJS 服务端）。
 
@@ -12,6 +12,33 @@
 ## 项目状态
 
 **v0.1（P0）已交付** —— 自提点餐主链路（扫码进店 → 菜单 → 下单支付 → 接单出餐 → 取餐闭环）全部可用，支持单机 docker-compose 部署（见[部署手册](./docs/deployment.md)）。当前进入 P1 规划阶段。
+
+## 功能亮点
+
+顾客端菜单点餐与商家后台管理一览（截图取自本地演示环境，原图见 [`docs/img/`](./docs/img)）：
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./docs/img/app_3.png" width="320" alt="顾客端菜单页" /><br/>
+      <sub><b>顾客端 · 菜单浏览</b>：分类侧栏双向联动、商品图、规格入口、底部购物车</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="./docs/img/admin_product.png" width="620" alt="商家后台商品管理" /><br/>
+      <sub><b>商家后台 · 商品管理</b>：预设图片选择、上下架、改库存、规格组绑定</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./docs/img/app_2.png" width="320" alt="顾客端确认订单" /><br/>
+      <sub><b>顾客端 · 确认订单</b>：备注、微信支付 / 到店支付</sub>
+    </td>
+    <td align="center">
+      <img src="./docs/img/admin_orders.png" width="620" alt="商家后台订单管理" /><br/>
+      <sub><b>商家后台 · 订单管理</b>：按状态分页签筛选，接单 / 出餐 / 退款流转</sub>
+    </td>
+  </tr>
+</table>
 
 ## 架构总览
 
@@ -69,6 +96,7 @@ Monorepo 基于 npm workspaces（`apps/*` + `server`），本地依赖通过 `do
 | 订单状态 | 待支付 → 待接单 → 制作中 → 待取餐 → 已完成，支持取消 / 退款分支 |
 | 商家端订单管理 | 新单实时提醒、按状态筛选、接单 / 出餐 / 取消、小票打印 |
 | 菜单管理 | 分类、商品、规格的维护与上下架、库存调整 |
+| 商品图片 | 服务端托管预设图集，商家后台缩略图点选，顾客端全链路展示（含订单快照） |
 | 营业设置 | 营业 / 打烊切换、门店公告 |
 | 实时同步 | 订单状态变化通过 WebSocket 推送，顾客端免刷新 |
 
@@ -135,7 +163,7 @@ seed 注入的演示数据，仅用于本地联调与体验版：
 | 商家 | `http://localhost:10087` | `admin` / `admin123` | 单门店后台账号，密码 bcrypt 存储 |
 | 顾客 | `http://localhost:10086` | 无需注册 | 本地生成 `openid` 存 localStorage，扫 scene 即进店 |
 
-演示内容：示例奶茶店 1 家（默认营业、开启到店支付）、3 个分类、4 个商品（含 1 个售罄）、2 个规格组（杯型必选 / 加料可选）。
+演示内容：示例奶茶店 1 家（默认营业、开启到店支付）、3 个分类、4 个商品（含 1 个售罄，均带预设商品图）、2 个规格组（杯型必选 / 加料可选）。
 
 ## 主链路验收（人肉步骤）
 
@@ -156,7 +184,7 @@ seed 注入的演示数据，仅用于本地联调与体验版：
 8. **确认取餐**：顾客端点「确认取餐」→ 订单变「已完成」，链路闭环。
 9. **库存校验**：全程回后台「菜单管理」看商品库存——下单即减、商家取消即回补（Redis 预扣与 DB 同步归还）。
 
-上述每一步的接口契约见 [`specs/03-api.md`](./specs/03-api.md)；服务端行为由 `server/src/**/*.spec.ts` 覆盖（当前 116 例）。
+上述每一步的接口契约见 [`specs/03-api.md`](./specs/03-api.md)；服务端行为由 `server/src/**/*.spec.ts` 覆盖（当前 119 例）。
 
 ## 体验版小程序
 
