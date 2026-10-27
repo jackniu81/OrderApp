@@ -19,8 +19,8 @@
 
 <table>
   <tr>
-    <td align="center" width="50%">
-      <img src="./docs/img/app_3.png" width="240" alt="顾客端菜单页" /><br/>
+    <td align="center" width="20%">
+      <img src="./docs/img/app_3.png" width="140" alt="顾客端菜单页" /><br/>
       <sub><b>顾客端 · 菜单浏览</b>：分类侧栏双向联动、商品图、规格入口、底部购物车</sub>
     </td>
     <td align="center" width="50%">
@@ -30,7 +30,7 @@
   </tr>
   <tr>
     <td align="center">
-      <img src="./docs/img/app_2.png" width="240" alt="顾客端确认订单" /><br/>
+      <img src="./docs/img/app_2.png" width="140" alt="顾客端确认订单" /><br/>
       <sub><b>顾客端 · 确认订单</b>：备注、微信支付 / 到店支付</sub>
     </td>
     <td align="center">
