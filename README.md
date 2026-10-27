@@ -38,6 +38,33 @@
       <sub><b>商家后台 · 订单管理</b>：按状态分页签筛选，接单 / 出餐 / 退款流转</sub>
     </td>
   </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <b>商家后台 · 菜单与门店管理</b><br/><br/>
+      <table align="center">
+        <tr>
+          <td align="center" width="25%">
+            <img src="./docs/img/admin_overview.png" width="300" alt="工作台" /><br/>
+            <sub>工作台：登录信息与常用入口</sub>
+          </td>
+          <td align="center" width="25%">
+            <img src="./docs/img/admin_catagory.png" width="300" alt="分类管理" /><br/>
+            <sub>分类管理：排序与顾客端可见开关</sub>
+          </td>
+        </tr>
+        <tr>
+          <td align="center">
+            <img src="./docs/img/admin_size.png" width="300" alt="规格组管理" /><br/>
+            <sub>规格组：单选 / 多选、必选、选项加价</sub>
+          </td>
+          <td align="center">
+            <img src="./docs/img/admin_site.png" width="300" alt="营业设置" /><br/>
+            <sub>营业设置：门店信息、营业时间、公告</sub>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
 </table>
 
 ## 架构总览
