@@ -20,6 +20,7 @@ import {
   createProduct,
   deleteProduct,
   listCategories,
+  listPresetImages,
   listProducts,
   listSpecGroups,
   updateProduct,
@@ -42,11 +43,55 @@ interface ProductFormValues {
   specGroupIds?: string[];
 }
 
+/**
+ * 商品图片选择器：从服务端预设图集中选一张，受控于 Form.Item name="image"。
+ * 再次点击已选项可取消（回到无图）；若当前值为非预设的历史 URL，额外展示一个选中块。
+ */
+function ImagePicker({
+  value,
+  onChange,
+  presets,
+}: {
+  value?: string;
+  onChange?: (v: string) => void;
+  presets: string[];
+}) {
+  const selected = value || '';
+  const tiles = presets.includes(selected) || !selected ? presets : [selected, ...presets];
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      {tiles.map((src) => {
+        const active = src === selected;
+        return (
+          <div
+            key={src}
+            onClick={() => onChange?.(active ? '' : src)}
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 6,
+              overflow: 'hidden',
+              cursor: 'pointer',
+              border: active ? '2px solid #1677ff' : '1px solid #eee',
+              boxSizing: 'border-box',
+            }}
+            title={active ? '点击取消' : '点击选择'}
+          >
+            <Image src={src} width={60} height={60} style={{ objectFit: 'cover' }} preview={false} />
+          </div>
+        );
+      })}
+      {!selected && <div style={{ width: 64, textAlign: 'center', color: '#bbb', fontSize: 12 }}>未选择</div>}
+    </div>
+  );
+}
+
 /** 商品管理（specs/03-api.md §5.2，F-08） */
 export default function ProductsPage() {
   const [rows, setRows] = useState<ProductInfo[]>([]);
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
   const [specGroups, setSpecGroups] = useState<SpecGroupInfo[]>([]);
+  const [presets, setPresets] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [editing, setEditing] = useState<ProductInfo | null>(null);
@@ -66,6 +111,11 @@ export default function ProductsPage() {
       setRows(products);
       setCategories(cats);
       setSpecGroups(groups);
+      try {
+        setPresets(await listPresetImages());
+      } catch {
+        // 预设图获取失败不阻塞商品列表
+      }
     } catch (e) {
       showError(e);
     } finally {
@@ -306,8 +356,8 @@ export default function ProductsPage() {
           <Form.Item label="描述" name="description">
             <Input.TextArea rows={2} maxLength={200} />
           </Form.Item>
-          <Form.Item label="图片 URL" name="image">
-            <Input placeholder="https://cdn.example.com/p001.png" />
+          <Form.Item label="商品图片" name="image">
+            <ImagePicker presets={presets} />
           </Form.Item>
           <Form.Item label="上架销售" name="onSale" valuePropName="checked">
             <Switch />

@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { readdirSync } from 'fs';
+import { join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../common/redis.service';
 import { CACHE_KEYS, CACHE_TTL } from '../common/cache-keys';
@@ -78,5 +80,23 @@ export class ProductService {
 
   async invalidate(productId: string): Promise<void> {
     await this.redis.del(CACHE_KEYS.product(productId));
+  }
+
+  /**
+   * 预设商品图清单（供 admin 商品图片选择器展示）。
+   * 扫描 server/static/products 目录，返回服务端静态路径（与 product.image 存值一致）。
+   */
+  listPresetImages(): string[] {
+    // 编译后为 dist/product，源码运行为 src/product，均上溯两级到 server 根
+    const dir = join(__dirname, '..', '..', 'static', 'products');
+    try {
+      return readdirSync(dir)
+        .filter((f) => /\.(png|jpe?g|gif|webp)$/i.test(f))
+        .sort()
+        .map((f) => `/api/v1/static/products/${f}`);
+    } catch {
+      this.logger.warn(`预设图目录不存在或不可读: ${dir}`);
+      return [];
+    }
   }
 }

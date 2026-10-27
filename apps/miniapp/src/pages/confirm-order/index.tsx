@@ -6,6 +6,7 @@ import { ApiError } from '../../services/request';
 import { cart, useCart } from '../../stores/cart';
 import { getCustomerId } from '../../utils/customer';
 import { formatPrice } from '../../utils/format';
+import { resolveImageUrl } from '../../utils/image-url';
 import type { CreateOrderItem, MerchantInfo, PayMethod } from '../../types';
 import './index.scss';
 
@@ -162,7 +163,7 @@ export default function ConfirmOrderPage() {
         <Text className="confirm-section-title">商品清单</Text>
         {lines.map((l) => (
           <View className="confirm-row" key={l.key}>
-            {l.image ? <Image className="confirm-row-img" src={l.image} mode="aspectFill" /> : <View className="confirm-row-img confirm-row-img-ph" />}
+            {l.image ? <Image className="confirm-row-img" src={resolveImageUrl(l.image)} mode="aspectFill" /> : <View className="confirm-row-img confirm-row-img-ph" />}
             <View className="confirm-row-info">
               <Text className="confirm-row-name">{l.name}</Text>
               {l.specSnapshot ? <Text className="confirm-row-spec">{l.specSnapshot}</Text> : null}

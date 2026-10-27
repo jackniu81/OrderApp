@@ -1,6 +1,7 @@
 import { View, Text, Image } from '@tarojs/components';
 import { cart, useCart } from '../stores/cart';
 import { formatPrice } from '../utils/format';
+import { resolveImageUrl } from '../utils/image-url';
 
 interface Props {
   visible: boolean;
@@ -33,7 +34,7 @@ export default function CartDrawer({ visible, onClose }: Props) {
           <View className="cart-rows">
             {lines.map((l) => (
               <View className="cart-row" key={l.key}>
-                {l.image ? <Image className="cart-row-img" src={l.image} mode="aspectFill" /> : null}
+                {l.image ? <Image className="cart-row-img" src={resolveImageUrl(l.image)} mode="aspectFill" /> : null}
                 <View className="cart-row-info">
                   <Text className="cart-row-name">{l.name}</Text>
                   {l.specSnapshot ? <Text className="cart-row-spec">{l.specSnapshot}</Text> : null}

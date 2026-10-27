@@ -19,6 +19,16 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   /**
+   * GET /api/v1/products/presets
+   * 预设商品图清单（必须声明在 :id 之前，否则会被参数路由匹配）
+   */
+  @Get('presets')
+  @HttpCode(200)
+  listPresets(): ApiResponse<string[]> {
+    return { code: 0, message: 'ok', data: this.productService.listPresetImages() };
+  }
+
+  /**
    * GET /api/v1/products/:id
    * 商品详情（含规格组 + 选项）
    */

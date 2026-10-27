@@ -1,11 +1,13 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { WsAdapter } from '@nestjs/platform-ws';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { BizExceptionFilter } from './common/biz-exception';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors({
     origin: '*',
@@ -13,6 +15,10 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api/v1');
+  // 托管预设商品图（server/static/**），置于 api/v1 前缀下以复用 admin/miniapp 现有的 /api 代理链路
+  app.useStaticAssets(join(__dirname, '..', 'static'), {
+    prefix: '/api/v1/static/',
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

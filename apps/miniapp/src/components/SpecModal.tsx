@@ -4,6 +4,7 @@ import Taro from '@tarojs/taro';
 import { productApi } from '../services/api';
 import { cart } from '../stores/cart';
 import { formatPrice } from '../utils/format';
+import { resolveImageUrl } from '../utils/image-url';
 import type { ProductDetail, SpecGroup, OrderSpec } from '../types';
 import './spec-modal.scss';
 
@@ -122,7 +123,7 @@ export default function SpecModal({ productId, onClose }: Props) {
     <View className="spec-mask" onClick={onClose}>
       <View className="spec-sheet" onClick={(e) => e.stopPropagation()}>
         <View className="spec-head">
-          {detail.image ? <Image className="spec-img" src={detail.image} mode="aspectFill" /> : null}
+          {detail.image ? <Image className="spec-img" src={resolveImageUrl(detail.image)} mode="aspectFill" /> : null}
           <View className="spec-head-info">
             <Text className="spec-name">{detail.name}</Text>
             {detail.description ? <Text className="spec-desc">{detail.description}</Text> : null}
